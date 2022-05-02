@@ -22,3 +22,9 @@ $ pip install opencv-python pygame numpy
 $ python3 main.py
 
 ```
+
+### via Poetry
+```
+$ poetry install
+$ poetry run python3 main.py
+```
