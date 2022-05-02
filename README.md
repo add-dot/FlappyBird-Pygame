@@ -2,7 +2,6 @@
 
 FlappyBird with OpenCV and PyGame
 
-
 ## Play Instructions:
 
 You need a blue object shown on camera in order to play, if not, the game will be paused.
@@ -15,7 +14,6 @@ ENJOY!
 ```sh
 $ git clone https://github.com/add-dot/FlappyBird-Pygame
 ```
-
 
 ### via Python
 ```python3
