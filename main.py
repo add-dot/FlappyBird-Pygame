@@ -27,7 +27,7 @@ FPS = 32  # Frames per second
 screen_width = 289
 screen_height = 511
 
-screen = pygame.display.set_mode((screen_width, screen_height))
+screen = pygame.display.set_mode((screen_width, screen_height),1,1)
 
 # For ground or base
 groundY = screen_height * 0.8
@@ -50,54 +50,55 @@ def text_screen(text, color, x, y):
 
 # Welcome screen function
 
-
 def get_centroid():
-    """Process a webcam image to filter a blue color, then
+    """
     Parameters
     ----------
-    param1 : type
-        Description
+    None
+
     Returns
     -------
-    type
-        Description
+    list[int]: 
+        
     """
-    success, img = CAP.read()
-    image = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(image, BLUE_LOWER, BLUE_UPPER)
-    contours, hierarchy = cv2.findContours(
-        mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )
-    if len(contours):
-        for contour in contours:
-            if cv2.contourArea(contour) > 500:
-                x, y, w, h = cv2.boundingRect(contour)
-                M = cv2.moments(contour)
-                cx = int(M["m10"] / M["m00"])
-                cy = int(M["m01"] / M["m00"])
-                if cy:
-                    return cy
+    try: 
+        _, img = CAP.read()
+        image = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(image, BLUE_LOWER, BLUE_UPPER)
+        contours, _ = cv2.findContours(
+            mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+        if len(contours):
+            for contour in contours:
+                if cv2.contourArea(contour) > 500:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    M = cv2.moments(contour)
+                    cx = int(M["m10"] / M["m00"])
+                    cy = int(M["m01"] / M["m00"])
+                    cv2.circle(img, (cx, cy), 5,(255, 255, 255), -1)
+                    cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 255), 3)
 
+        cv2.imshow("mask", mask)
+        cv2.imshow("Image", img)
+        cv2.waitKey(1)
+
+        centers = [cx * -1, cy]
+
+        return centers
+
+    except Exception as _:
+        return None
 
 
 def welcomeScreen():
-    """Description
-    Parameters
-    ----------
-    param1 : type
-        Description
-    Returns
-    -------
-    type
-        Description
-    """
+
+    # Shows welcome image on the screen
 
     playerX = int(screen_width/5)
     playerY = int((screen_height-game_sprites['player'].get_height())/2)
     msgX = int((screen_width - game_sprites['meassage'].get_width())/1.98)
     msgY = int(screen_height * 0.05)
     baseX = 0
-
     while True:
         for event in pygame.event.get():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
@@ -114,17 +115,8 @@ def welcomeScreen():
                 pygame.display.update()
                 fps_clock.tick(FPS)
 
+
 def mainGame():
-    """Description
-    Parameters
-    ----------
-    param1 : type
-        Description
-    Returns
-    -------
-    type
-        Description
-    """
     score = 0
     playerX = int(screen_width/5)
     playery = int(screen_width/2)
@@ -157,87 +149,89 @@ def mainGame():
     playerFlapped = False  # It is True only when the bird is flapping
 
     # Main GameLoop
+    Pause = False
     while True:
         for event in pygame.event.get():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
 
-        center = get_centroid()
+        centers = get_centroid()
+        
+        if centers is None:
+            Pause = True
+        else:
+            Pause = False
 
-        if center is not None:
-            if center < 90:
-                if playery > 0:
-                    playerVelY = playerFalpAccv
-                    playerFlapped = True
-                    game_sounds['wing'].play()
+        while not Pause:
+            centers = get_centroid()
+            
+            if centers is not None:
+                _, cy = centers
+                if cy < 170:
+                    if playery > 0:
+                        playerVelY = playerFalpAccv
+                        playerFlapped = True
+                        game_sounds['wing'].play()
+            else:
+                Pause = True
 
-         # This function will return true if the olayer is crashed
-        crashTest = isCollide(playerX, playery, upperPipes, lowerPipes)
-        if crashTest:
-            return
+             # This function will return true if the olayer is crashed
+            crashTest = isCollide(playerX, playery, upperPipes, lowerPipes)
+            if crashTest:
+                return
 
-        # Check Score
-        playerMidPos = playerX + game_sprites['player'].get_width()/2
-        for pipe in upperPipes:
-            pipeMidPos = pipe['x'] + game_sprites['pipe'][0].get_width()/2
-            if pipeMidPos <= playerMidPos < pipeMidPos + 4:
-                score += 1
-                # print(f"Your score is {score}")
-                game_sounds['point'].play()
+            # Check Score
+            playerMidPos = playerX + game_sprites['player'].get_width()/2
+            for pipe in upperPipes:
+                pipeMidPos = pipe['x'] + game_sprites['pipe'][0].get_width()/2
+                if pipeMidPos <= playerMidPos < pipeMidPos + 4:
+                    score += 1
+                    # print(f"Your score is {score}")
+                    game_sounds['point'].play()
 
-        if playerVelY < playerMaxVelY and not playerFlapped:
-            playerVelY += playerAccY
+            if playerVelY < playerMaxVelY and not playerFlapped:
+                playerVelY += playerAccY
 
-        if playerFlapped:
-            playerFlapped = False
+            if playerFlapped:
+                playerFlapped = False
 
-        playerHeight = game_sprites['player'].get_height()
-        playery = playery + min(playerVelY, groundY - playery - playerHeight)
+            playerHeight = game_sprites['player'].get_height()
+            playery = playery + min(playerVelY, groundY - playery - playerHeight)
 
-        # Move pipe to the left
-        for upperPipe, lowerPipe in zip(upperPipes, lowerPipes):
-            upperPipe['x'] += pipeVelocityX
-            lowerPipe['x'] += pipeVelocityX
+            # Move pipe to the left
+            for upperPipe, lowerPipe in zip(upperPipes, lowerPipes):
+                upperPipe['x'] += pipeVelocityX
+                lowerPipe['x'] += pipeVelocityX
 
-        # Add a new pipe when the first pipe about to go to the left most of the screen
-        if 0 < upperPipes[0]['x'] < 5:
-            newPipe = getRandomPipe()
-            upperPipes.append(newPipe[0])
-            lowerPipes.append(newPipe[1])
+            # Add a new pipe when the first pipe about to go to the left most of the screen
+            if 0 < upperPipes[0]['x'] < 5:
+                newPipe = getRandomPipe()
+                upperPipes.append(newPipe[0])
+                lowerPipes.append(newPipe[1])
 
-        # If the pipe is out of the screen, remove it
-        if upperPipes[0]['x'] < -game_sprites['pipe'][0].get_width():
-            upperPipes.pop(0)
-            lowerPipes.pop(0)
+            # If the pipe is out of the screen, remove it
+            if upperPipes[0]['x'] < -game_sprites['pipe'][0].get_width():
+                upperPipes.pop(0)
+                lowerPipes.pop(0)
 
-        # Let's blit our sprites now
-        screen.blit(game_sprites['bg'], (0, 0))
+            # Let's blit our sprites now
+            screen.blit(game_sprites['bg'], (0, 0))
 
-        for upperPipe, lowerPipe in zip(upperPipes, lowerPipes):
-            screen.blit(game_sprites['pipe'][0], (upperPipe['x'], upperPipe['y']))
-            screen.blit(game_sprites['pipe'][1], (lowerPipe['x'], lowerPipe['y']))
+            for upperPipe, lowerPipe in zip(upperPipes, lowerPipes):
+                screen.blit(game_sprites['pipe'][0], (upperPipe['x'], upperPipe['y']))
+                screen.blit(game_sprites['pipe'][1], (lowerPipe['x'], lowerPipe['y']))
 
-        screen.blit(game_sprites['base'], (baseX, groundY))
-        screen.blit(game_sprites['player'], (playerX, playery))
+            screen.blit(game_sprites['base'], (baseX, groundY))
+            screen.blit(game_sprites['player'], (playerX, playery))
 
-        # Score define
-        text_screen("Score : " + str(score), white, 5, 5)
+            # Score define
+            text_screen("Score : " + str(score), white, 5, 5)
 
-        pygame.display.update()
-        fps_clock.tick(FPS)
+            pygame.display.update()
+            fps_clock.tick(FPS)
 
 def isCollide(playerX, playery, upperPipes, lowerPipes):
-    """Description
-    Parameters
-    ----------
-    param1 : type
-        Description
-    Returns
-    -------
-    type
-        Description
-    """
 
     if playery > groundY - 25 or playery < 0:
         game_sounds['hit'].play()
@@ -259,16 +253,6 @@ def isCollide(playerX, playery, upperPipes, lowerPipes):
 
 
 def getRandomPipe():
-    """Description
-    Parameters
-    ----------
-    param1 : type
-        Description
-    Returns
-    -------
-    type
-        Description
-    """
     """
     Generate positions of two pipes(one bottom straight and one top rotated ) for blitting on the screen
     """
