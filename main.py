@@ -7,6 +7,13 @@ from pygame.locals import *
 
 # For generating random numbers
 import random
+import cv2
+import numpy as np
+
+
+CAP = cv2.VideoCapture(0)
+BLUE_LOWER = np.array([95, 150, 30])
+BLUE_UPPER = np.array([135, 255, 255])
 
 pygame.init()
 
@@ -44,9 +51,46 @@ def text_screen(text, color, x, y):
 # Welcome screen function
 
 
-def welcomeScreen():
+def get_centroid():
+    """Process a webcam image to filter a blue color, then
+    Parameters
+    ----------
+    param1 : type
+        Description
+    Returns
+    -------
+    type
+        Description
+    """
+    success, img = CAP.read()
+    image = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(image, BLUE_LOWER, BLUE_UPPER)
+    contours, hierarchy = cv2.findContours(
+        mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+    if len(contours):
+        for contour in contours:
+            if cv2.contourArea(contour) > 500:
+                x, y, w, h = cv2.boundingRect(contour)
+                M = cv2.moments(contour)
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                if cy:
+                    return cy
 
-    # Shows welcome image on the screen
+
+
+def welcomeScreen():
+    """Description
+    Parameters
+    ----------
+    param1 : type
+        Description
+    Returns
+    -------
+    type
+        Description
+    """
 
     playerX = int(screen_width/5)
     playerY = int((screen_height-game_sprites['player'].get_height())/2)
@@ -71,6 +115,16 @@ def welcomeScreen():
                 fps_clock.tick(FPS)
 
 def mainGame():
+    """Description
+    Parameters
+    ----------
+    param1 : type
+        Description
+    Returns
+    -------
+    type
+        Description
+    """
     score = 0
     playerX = int(screen_width/5)
     playery = int(screen_width/2)
@@ -109,7 +163,10 @@ def mainGame():
                 pygame.quit()
                 sys.exit()
 
-            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
+        center = get_centroid()
+
+        if center is not None:
+            if center < 90:
                 if playery > 0:
                     playerVelY = playerFalpAccv
                     playerFlapped = True
@@ -171,6 +228,16 @@ def mainGame():
         fps_clock.tick(FPS)
 
 def isCollide(playerX, playery, upperPipes, lowerPipes):
+    """Description
+    Parameters
+    ----------
+    param1 : type
+        Description
+    Returns
+    -------
+    type
+        Description
+    """
 
     if playery > groundY - 25 or playery < 0:
         game_sounds['hit'].play()
@@ -192,6 +259,16 @@ def isCollide(playerX, playery, upperPipes, lowerPipes):
 
 
 def getRandomPipe():
+    """Description
+    Parameters
+    ----------
+    param1 : type
+        Description
+    Returns
+    -------
+    type
+        Description
+    """
     """
     Generate positions of two pipes(one bottom straight and one top rotated ) for blitting on the screen
     """
@@ -245,7 +322,3 @@ if __name__ == '__main__':
         welcomeScreen()
         # This is a main game function
         mainGame()
-
-
-
-
