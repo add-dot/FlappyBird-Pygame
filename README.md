@@ -1,13 +1,12 @@
 # Flappy Bird Game with OpenCV
 
-- A Flappy Bird Game that can be play with a webcam
+FlappyBird with OpenCV and PyGame
 
-# Installation
+## Play Instructions:
 
-
-## Game Author
-
-- [@dattpanchal04](https://github.com/dattpanchal04)
+You need a blue object shown on camera in order to play, if not, the game will be paused.
+When you move the blue object upwards, the jump action will be triggered.
+ENJOY!
 
 
 ## Run Game
@@ -28,3 +27,9 @@ $ python3 main.py
 $ poetry install
 $ poetry run python3 main.py
 ```
+
+## Game Author
+
+This is a fork from:
+
+- [@dattpanchal04](https://github.com/dattpanchal04)
