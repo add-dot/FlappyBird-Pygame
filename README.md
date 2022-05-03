@@ -20,7 +20,6 @@ $ git clone https://github.com/add-dot/FlappyBird-Pygame
 $ cd FlappyBird-Pygame
 $ poetry install
 ```
-Or$ python3 main.py
 
 ### via Python
 ```sh
